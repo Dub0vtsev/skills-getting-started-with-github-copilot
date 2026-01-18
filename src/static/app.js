@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const spotsLeft = details.max_participants - details.participants.length;
 
         const participantsList = details.participants.length > 0
-          ? `<ul>${details.participants.map(p => `<li>${p}</li>`).join('')}</ul>`
+          ? `<div class="participants-list">${details.participants.map(p => `<div class="participant-item" data-activity="${name}" data-email="${p}"><span>${p}</span><button class="delete-btn" aria-label="Remove ${p}">✕</button></div>`).join('')}</div>`
           : '<p><em>No participants yet</em></p>';
 
         activityCard.innerHTML = `
@@ -42,6 +42,37 @@ document.addEventListener("DOMContentLoaded", () => {
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
+      });
+
+      // Add event listeners for delete buttons
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const parentDiv = btn.parentElement;
+          const activity = parentDiv.getAttribute('data-activity');
+          const email = parentDiv.getAttribute('data-email');
+          
+          try {
+            const response = await fetch(
+              `/activities/${encodeURIComponent(activity)}/participant/${encodeURIComponent(email)}`,
+              {
+                method: "DELETE",
+              }
+            );
+
+            if (response.ok) {
+              // Remove the participant item from the DOM
+              parentDiv.remove();
+              // Refresh the activities to update the count
+              fetchActivities();
+            } else {
+              const result = await response.json();
+              console.error("Error removing participant:", result.detail);
+            }
+          } catch (error) {
+            console.error("Error removing participant:", error);
+          }
+        });
       });
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
